@@ -9,6 +9,7 @@ groq>=0.9.0
 opencv-python>=4.8.0
 pillow>=10.0.0
 numpy>=1.24.0
+python-dotenv>=1.0.0
 
 # Dependencies for Colab Training Pipeline (NapoVision_Model_Training.ipynb)
 # roboflow>=1.1.0

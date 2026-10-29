@@ -1,12 +1,16 @@
 """
 NapoVision Groq Clinical Ergonomic Engine
-Integrates Groq API (Llama-3.3-70B) to translate technical posture classification,
+Integrates Groq API to translate technical posture classification,
 Grad-CAM saliency heatmaps, and biomechanical strain metrics into structured clinical prescriptions.
 """
 
 import os
 import json
 import logging
+from dotenv import load_dotenv
+
+# Load environment configuration (.env)
+load_dotenv()
 
 try:
     from groq import Groq
@@ -37,15 +41,32 @@ Respond strictly with valid JSON conforming to this schema:
 }
 """
 
+# Candidate models in prioritized order
+CANDIDATE_MODELS = [
+    os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
+    "openai/gpt-oss-120b",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-70b-versatile",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "llama-3.1-8b-instant"
+]
+
 def get_clinical_advice(posture_class, confidence, risk_data, user_api_key=None):
     """
-    Generates clinical ergonomic advice using Groq API (or medical fallback engine).
+    Generates dynamic clinical ergonomic advice using Groq API bound directly to
+    the classified class, confidence, biomechanical risk score, and Grad-CAM strain zones.
     """
     api_key = user_api_key or os.environ.get("GROQ_API_KEY", "").strip()
 
     if GROQ_AVAILABLE and api_key:
         try:
             client = Groq(api_key=api_key)
+            strain_zone_descriptions = [
+                f"{z['zone']} - {z['status']} (Impact: {z['impact']})"
+                for z in risk_data.get('strain_zones', [])
+            ]
+            
             prompt_content = f"""
 PATIENT POSTURE DIAGNOSTIC REPORT:
 - Classified Sleep Posture: {posture_class}
@@ -58,33 +79,65 @@ PATIENT POSTURE DIAGNOSTIC REPORT:
   * Lumbar Spine: {risk_data['anatomical_breakdown']['lumbar']}/100
   * Pelvic/Hip Alignment: {risk_data['anatomical_breakdown']['pelvic']}/100
 - Grad-CAM Strain Heatmap Observations:
-  * High-intensity heat focus observed over: {', '.join([z['zone'] + ' (' + z['status'] + ')' for z in risk_data['strain_zones']])}
+  * Identified High-Stress Anatomical Zones: {'; '.join(strain_zone_descriptions)}
 
-Generate the full clinical ergonomics evaluation JSON.
+CLINICAL INSTRUCTIONS:
+Generate a personalized, context-aware clinical ergonomics evaluation strictly conforming to the JSON schema.
+- In 'clinical_summary', explicitly cite the diagnosed {posture_class} posture, the model confidence ({confidence*100:.2f}%), and the measured risk tier ({risk_data['level']} with score {risk_data['score']}/100).
+- In 'pathomechanics', analyze the exact anatomical vectors, joint compression, and muscle strains specific to {posture_class}.
+- In 'cervical_prescription' and 'lumbar_prescription', prescribe targeted biomechanical corrections addressing the patient's cervical strain ({risk_data['anatomical_breakdown']['cervical']}/100) and lumbar strain ({risk_data['anatomical_breakdown']['lumbar']}/100).
+- In 'ergonomic_equipment', provide specific mattress firmness recommendations and pillow loft measurements tailored to {posture_class}.
+- In 'corrective_exercises', deliver 3 to 4 clinical rehabilitation exercises specifically designed to counter the muscular imbalances of {posture_class}.
 """
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": CLINICAL_SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt_content}
-                ],
-                temperature=0.3,
-                max_tokens=1500,
-                response_format={"type": "json_object"}
-            )
-            raw_response = completion.choices[0].message.content
-            parsed = json.loads(raw_response)
-            parsed["engine_source"] = "Groq Llama-3.3-70B (Live Clinical Synthesis)"
-            return parsed
+            tried_models = []
+            last_err = None
+            
+            for model_candidate in CANDIDATE_MODELS:
+                if not model_candidate or model_candidate in tried_models:
+                    continue
+                tried_models.append(model_candidate)
+                
+                try:
+                    logger.info(f"Invoking Groq clinical generation with model: {model_candidate} for class: {posture_class}")
+                    completion = client.chat.completions.create(
+                        model=model_candidate,
+                        messages=[
+                            {"role": "system", "content": CLINICAL_SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt_content}
+                        ],
+                        temperature=0.3,
+                        max_tokens=1500,
+                        response_format={"type": "json_object"}
+                    )
+                    raw_response = completion.choices[0].message.content
+                    parsed = json.loads(raw_response)
+                    parsed["engine_source"] = f"Groq {model_candidate} (Live Clinical Synthesis)"
+                    logger.info(f"Groq generation successful with model: {model_candidate}")
+                    return parsed
+                except Exception as model_err:
+                    last_err = model_err
+                    err_msg = str(model_err)
+                    if "model_not_found" in err_msg or "does not exist" in err_msg:
+                        logger.warning(f"Model {model_candidate} not available on this Groq account, trying next...")
+                        continue
+                    else:
+                        logger.warning(f"Groq API error with {model_candidate}: {model_err}")
+                        break
+
+            logger.warning(f"All Groq candidates exhausted. Last error: {last_err}. Using NapoVision Clinical Engine.")
+            fallback = get_clinical_fallback(posture_class, risk_data)
+            fallback["engine_source"] = f"NapoVision Clinical Engine (Fallback: {str(last_err)})"
+            return fallback
+
         except Exception as e:
-            logger.warning(f"Groq API call encountered an issue: {e}. Falling back to NapoVision Clinical Engine.")
+            logger.warning(f"Groq API client initialization error: {e}. Falling back to NapoVision Clinical Engine.")
             fallback = get_clinical_fallback(posture_class, risk_data)
             fallback["engine_source"] = f"NapoVision Clinical Engine (Fallback: {str(e)})"
             return fallback
 
     # If no API key provided, use rich clinical fallback engine
     fallback = get_clinical_fallback(posture_class, risk_data)
-    fallback["engine_source"] = "NapoVision Clinical Ergonomic Engine (Enter Groq API Key for Dynamic Llama-3.3-70B)"
+    fallback["engine_source"] = "NapoVision Clinical Ergonomic Engine (Enter Groq API Key for Dynamic Synthesis)"
     return fallback
 
 

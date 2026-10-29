@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize UI & Settings
   function init() {
     updateApiKeyStatus();
+    checkBackendHealth();
     setupEventListeners();
     setupPresetClickHandlers();
     
@@ -102,16 +103,33 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPreset('prone', true);
   }
 
+  // Check Backend Health & Environment Configuration
+  async function checkBackendHealth() {
+    try {
+      const resp = await fetch('/api/health');
+      if (resp.ok) {
+        const health = await resp.json();
+        if (health.groq_api_configured && (!state.groqApiKey || !state.groqApiKey.startsWith('gsk_'))) {
+          apiKeyBtnText.textContent = 'Groq: Active';
+          headerEngineSource.textContent = 'Groq Live Synthesis';
+          keyStatusText.textContent = 'Connected via Server Environment (.env)';
+        }
+      }
+    } catch (e) {
+      console.warn('Backend health check note:', e);
+    }
+  }
+
   // Update API Key Display State
   function updateApiKeyStatus() {
     if (state.groqApiKey && state.groqApiKey.startsWith('gsk_')) {
       apiKeyBtnText.textContent = 'Groq: Active';
-      headerEngineSource.textContent = 'Groq Llama-3.3-70B';
+      headerEngineSource.textContent = 'Groq Live Synthesis';
       keyStatusText.textContent = `Custom Key Active (${state.groqApiKey.substring(0, 8)}...)`;
       if (groqApiKeyInput) groqApiKeyInput.value = state.groqApiKey;
     } else {
       apiKeyBtnText.textContent = 'Groq Key';
-      headerEngineSource.textContent = 'Llama-3.3-70B / Clinical Engine';
+      headerEngineSource.textContent = 'Groq / Clinical Engine';
       keyStatusText.textContent = 'Using NapoVision Clinical Ergonomics Engine';
       if (groqApiKeyInput) groqApiKeyInput.value = '';
     }

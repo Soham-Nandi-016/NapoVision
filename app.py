@@ -2,53 +2,44 @@ import os
 import io
 import base64
 import logging
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 import torch
+import numpy as np
+
+# Load environment configuration (.env)
+load_dotenv()
 
 from model_utils import (
     CLASSES,
     CLASS_DISPLAY_NAMES,
-    build_model,
-    GradCAM,
+    load_trained_model,
+    data_transforms,
     get_transforms,
+    GradCAM,
     overlay_heatmap_on_image
 )
 from risk_calculator import compute_biomechanical_risk
 from groq_engine import get_clinical_advice
 
-# Configure logging
+# Configure detailed application logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("napovision_app")
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 CORS(app)
 
-# Global model state
+# Global model state & device selection
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "napovision_model.pth")
+logger.info(f"NapoVision compute device: {DEVICE}")
 
-logger.info(f"Using compute device: {DEVICE}")
+# Initialize model using automated discovery & checkpoint verification
+model, MODEL_PATH = load_trained_model(device=DEVICE)
 
-# Initialize model
-model = build_model(num_classes=len(CLASSES))
-if os.path.exists(MODEL_PATH):
-    try:
-        state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
-        model.load_state_dict(state_dict)
-        logger.info(f"Loaded NapoVision model weights from {MODEL_PATH}")
-    except Exception as e:
-        logger.error(f"Failed to load checkpoint from {MODEL_PATH}: {e}")
-else:
-    logger.warning(f"No checkpoint found at {MODEL_PATH}. Initialized base MobileNetV2 architecture.")
-
-model.to(DEVICE)
-model.eval()
-
-# Grad-CAM engine
+# Grad-CAM engine attached to final convolutional feature layer of MobileNetV2
 gradcam_engine = GradCAM(model, target_layer=model.features[-1])
-transform_pipeline = get_transforms()
 
 
 @app.route("/")
@@ -59,14 +50,16 @@ def index():
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    """Returns system status, device configuration, and model availability"""
+    """Returns system status, device configuration, model availability, and Groq status"""
     groq_key_set = bool(os.environ.get("GROQ_API_KEY", "").strip())
+    model_exists = os.path.exists(MODEL_PATH) if MODEL_PATH else False
     return jsonify({
         "status": "online",
         "system": "NapoVision Medical XAI Engine",
         "tagline": "Sleep easy, live easy",
         "device": str(DEVICE),
-        "model_loaded": os.path.exists(MODEL_PATH),
+        "model_loaded": model_exists,
+        "model_path": MODEL_PATH,
         "groq_api_configured": groq_key_set,
         "supported_classes": CLASSES
     })
@@ -113,57 +106,82 @@ def predict():
     """
     Main diagnostic endpoint:
     Accepts image via multipart form-data ('image' / 'file') or JSON ('image' as base64 data URL).
-    Returns class prediction, confidence, Grad-CAM heatmap (base64),
-    Biomechanical Risk Index (0-100), and Groq Clinical Advice.
+    Decodes image bytes, executes live PyTorch MobileNetV2 forward pass via data_transforms['val'],
+    computes dynamic Grad-CAM saliency map on target layer, calculates Biomechanical Risk,
+    and invokes Groq LLM API with full diagnostic payload.
     """
     try:
         raw_image_data = None
+        filename = "unknown_input.jpg"
         user_groq_key = request.headers.get("X-Groq-Api-Key") or request.form.get("groq_api_key")
 
-        # 1. Parse image input
-        if "file" in request.files:
+        # 1. Parse Image Payload (File Upload, Base64, or Preset Reference)
+        if "file" in request.files and request.files["file"].filename:
             file = request.files["file"]
             raw_image_data = file.read()
-        elif "image" in request.files:
+            filename = file.filename
+        elif "image" in request.files and request.files["image"].filename:
             file = request.files["image"]
             raw_image_data = file.read()
+            filename = file.filename
+        elif request.form.get("preset") or request.form.get("preset_id"):
+            preset_name = request.form.get("preset") or request.form.get("preset_id")
+            preset_path = os.path.join(os.path.dirname(__file__), "static", "presets", f"{preset_name}.jpg")
+            if os.path.exists(preset_path):
+                with open(preset_path, "rb") as pf:
+                    raw_image_data = pf.read()
+                filename = f"{preset_name}.jpg"
         elif request.is_json:
             data = request.get_json()
             if not user_groq_key and "groq_api_key" in data:
                 user_groq_key = data["groq_api_key"]
-            if "image" in data:
+
+            if "preset" in data:
+                preset_name = data["preset"]
+                preset_path = os.path.join(os.path.dirname(__file__), "static", "presets", f"{preset_name}.jpg")
+                if os.path.exists(preset_path):
+                    with open(preset_path, "rb") as pf:
+                        raw_image_data = pf.read()
+                    filename = f"{preset_name}.jpg"
+            elif "image" in data:
                 img_str = data["image"]
+                filename = data.get("filename", "base64_upload.jpg")
                 if "," in img_str:
                     img_str = img_str.split(",", 1)[1]
                 raw_image_data = base64.b64decode(img_str)
 
         if not raw_image_data:
-            return jsonify({"error": "No image payload found in request. Please upload a file or base64 data string."}), 400
+            return jsonify({"error": "No image payload found in request. Please upload an image file, preset name, or base64 data string."}), 400
 
-        # 2. Open and preprocess image
+        # 2. Decode Raw Image Bytes to RGB PIL Image
         original_pil = Image.open(io.BytesIO(raw_image_data)).convert("RGB")
-        input_tensor = transform_pipeline(original_pil).unsqueeze(0).to(DEVICE)
+        orig_w, orig_h = original_pil.size
 
-        # 3. Model Inference & Grad-CAM Generation
+        # 3. Apply Validation Data Transforms & Transfer to Device
+        val_transform = data_transforms["val"]
+        input_tensor = val_transform(original_pil).unsqueeze(0).to(DEVICE)
+
+        # 4. Live PyTorch Inference Forward Pass & Dynamic Grad-CAM Generation
+        # Fresh forward pass on the active input_tensor:
         cam_mask, predicted_class_idx, logits = gradcam_engine.generate(input_tensor)
         probabilities = torch.softmax(logits, dim=1)[0].detach().cpu().numpy()
 
         predicted_class = CLASSES[predicted_class_idx]
         confidence = float(probabilities[predicted_class_idx])
 
-        # All class probabilities mapping
+        # Compute full multi-class probability breakdown
         class_probs = {
             CLASSES[i]: float(probabilities[i])
             for i in range(len(CLASSES))
         }
 
-        # 4. Generate Explainable AI (Grad-CAM) Visual Heatmaps
+        # 5. Explainable AI: Generate Grad-CAM Heatmap overlay accurately scaled to (orig_h, orig_w)
         blended_b64, heatmap_only_b64 = overlay_heatmap_on_image(original_pil, cam_mask, alpha=0.55)
 
-        # 5. Compute Biomechanical Strain Risk Index
+        # 6. Biomechanical Strain Risk Index Calculation
         risk_data = compute_biomechanical_risk(predicted_class, confidence, cam_mask)
 
-        # 6. Groq LLM Clinical Ergonomics Synthesis
+        # 7. Groq LLM Clinical Ergonomics Prescription
         clinical_advice = get_clinical_advice(
             posture_class=predicted_class,
             confidence=confidence,
@@ -171,6 +189,16 @@ def predict():
             user_api_key=user_groq_key
         )
 
+        # 8. Terminal Request Logging
+        logger.info(
+            f"[INFERENCE] Input: '{filename}' ({orig_w}x{orig_h}) | "
+            f"Predicted Class: '{predicted_class}' ({CLASS_DISPLAY_NAMES.get(predicted_class)}) | "
+            f"Confidence: {confidence * 100:.2f}% | "
+            f"Biomechanical Risk: {risk_data['score']}/100 ({risk_data['level']}) | "
+            f"Groq Engine: '{clinical_advice.get('engine_source')}'"
+        )
+
+        # 9. Format API Response Payload
         response_payload = {
             "success": True,
             "prediction": {
