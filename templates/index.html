@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NapoVision | XAI Sleep Posture & Spinal Alignment Monitoring System</title>
+  <meta name="description" content="NapoVision is an Explainable AI (Grad-CAM) powered clinical ergonomics system that monitors sleep posture, assesses biomechanical spinal strain risk, and delivers personalized orthopedic corrective recommendations via Groq LLM.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Clinical Navigation / Brand Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-logo-symbol">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="logo-icon">
+            <rect width="40" height="40" rx="10" fill="#0EA5E9" fill-opacity="0.12"/>
+            <path d="M20 7C16.5 7 13.5 9 12 12C14 11 16.5 11 18.5 12C21.5 13.5 24 16.5 24 20C24 23.5 21.5 26.5 18.5 28C16.5 29 14 29 12 28C13.5 31 16.5 33 20 33C27.18 33 33 27.18 33 20C33 12.82 27.18 7 20 7Z" fill="#0284C7"/>
+            <circle cx="12" cy="19.5" r="2.2" fill="#0EA5E9"/>
+            <circle cx="15.5" cy="15" r="2.2" fill="#0284C7"/>
+            <circle cx="16.5" cy="24.5" r="2.2" fill="#0369A1"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1 class="brand-name">NapoVision</h1>
+            <span class="system-subtag">Clinical XAI v2.4</span>
+          </div>
+          <p class="brand-tagline">Sleep easy, live easy</p>
+        </div>
+      </div>
+
+      <div class="header-right-meta">
+        <div class="architecture-chip">
+          <span class="arch-label">Model:</span>
+          <span class="arch-val">MobileNetV2 + Grad-CAM</span>
+        </div>
+        <div class="architecture-chip">
+          <span class="arch-label">Clinical Engine:</span>
+          <span class="arch-val" id="headerEngineSource">Groq Llama-3.3-70B</span>
+        </div>
+        <button id="openApiKeyModalBtn" class="btn-api-config" title="Configure Personal Groq API Key">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2l-2 2m-1.5 6.1L19 12l2-2-4.5-4.5-2 2 1.9 1.5M15.5 13.5l-8.7 8.7a2.12 2.12 0 0 1-3-3l8.7-8.7"/>
+            <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>
+          </svg>
+          <span id="apiKeyBtnText">Groq Key</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="main-layout">
+    
+    <!-- Hero / Orientation Section -->
+    <section class="section-hero">
+      <div class="hero-content">
+        <h2 class="hero-headline">Explainable Biomechanical Sleep Posture Monitoring</h2>
+        <p class="hero-description">
+          Detect nocturnal spinal curvature, quantify anatomical strain indices (0–100), visualize Explainable AI Grad-CAM heatmaps, and obtain personalized orthopedic corrective protocols.
+        </p>
+      </div>
+    </section>
+
+    <!-- Upload & Preset Workflow Section -->
+    <section class="upload-workflow-card card-glass">
+      <div class="card-section-header">
+        <div>
+          <h3 class="section-title">1. Patient Posture Input</h3>
+          <p class="section-subtitle">Select a clinical preset posture anchor or upload an overhead sleep photo</p>
+        </div>
+        <div class="upload-controls-badge">
+          <span>Supported Formats: JPG, PNG, WEBP</span>
+        </div>
+      </div>
+
+      <!-- Presets Gallery -->
+      <div class="presets-gallery-wrapper">
+        <div class="presets-title-row">
+          <span class="presets-label">Click a clinical preset to test instantly:</span>
+        </div>
+        <div class="presets-grid" id="presetsGrid">
+          <!-- Preset buttons populated dynamically via JS -->
+          <button class="preset-card active-preset" data-preset="supine">
+            <div class="preset-thumb-wrapper">
+              <img src="/static/presets/supine.jpg" alt="Supine Back Posture">
+            </div>
+            <div class="preset-info">
+              <span class="preset-name">Supine (Back)</span>
+              <span class="preset-strain-tag low-tag">Low Strain ~18/100</span>
+            </div>
+          </button>
+          
+          <button class="preset-card" data-preset="side">
+            <div class="preset-thumb-wrapper">
+              <img src="/static/presets/side.jpg" alt="Lateral Side Posture">
+            </div>
+            <div class="preset-info">
+              <span class="preset-name">Lateral Side</span>
+              <span class="preset-strain-tag mild-tag">Mild Strain ~37/100</span>
+            </div>
+          </button>
+
+          <button class="preset-card" data-preset="fetal">
+            <div class="preset-thumb-wrapper">
+              <img src="/static/presets/fetal.jpg" alt="Fetal Posture">
+            </div>
+            <div class="preset-info">
+              <span class="preset-name">Fetal Curled</span>
+              <span class="preset-strain-tag mod-tag">Moderate Strain ~65/100</span>
+            </div>
+          </button>
+
+          <button class="preset-card" data-preset="prone">
+            <div class="preset-thumb-wrapper">
+              <img src="/static/presets/prone.jpg" alt="Prone Stomach Posture">
+            </div>
+            <div class="preset-info">
+              <span class="preset-name">Prone (Stomach)</span>
+              <span class="preset-strain-tag high-tag">High Strain ~86/100</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive Dropzone -->
+      <div class="dropzone-area" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" class="visually-hidden">
+        
+        <div class="dropzone-unloaded" id="dropzoneUnloaded">
+          <div class="upload-icon-circle">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="dropzone-copy">
+            <span class="dropzone-main-text"><strong>Drag & drop</strong> sleep posture image, or <button type="button" class="btn-text-link" id="browseFileBtn">browse device</button></span>
+            <span class="dropzone-hint">Overhead horizontal view recommended for optimal biomechanical landmark localization</span>
+          </div>
+        </div>
+
+        <div class="dropzone-loaded" id="dropzoneLoaded" style="display: none;">
+          <div class="preview-thumbnail-container">
+            <img id="previewImage" src="" alt="Sleep Posture Preview">
+          </div>
+          <div class="preview-meta-panel">
+            <div class="file-meta-header">
+              <h4 id="previewFilename" class="preview-filename">posture_sample.jpg</h4>
+              <span id="previewFilesize" class="preview-filesize">2.4 MB</span>
+            </div>
+            <div class="preview-actions-row">
+              <button id="reselectBtn" class="btn-secondary">Choose Different Image</button>
+              <button id="analyzeBtn" class="btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                <span>Analyze Spinal Alignment</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Diagnostics In-Progress Overlay/Card -->
+    <div class="diagnostics-loader card-glass" id="diagnosticLoader" style="display: none;">
+      <div class="loader-spinner-wrapper">
+        <div class="clinical-spinner"></div>
+      </div>
+      <div class="loader-status-content">
+        <h4 class="loader-title">Analyzing Biomechanical Alignment</h4>
+        <div class="pipeline-progress-steps">
+          <div class="step-item step-active" id="step1">
+            <span class="step-num">1</span>
+            <span class="step-text">Standardizing 224x224 tensor coordinates...</span>
+          </div>
+          <div class="step-item" id="step2">
+            <span class="step-num">2</span>
+            <span class="step-text">MobileNetV2 feature backbone inference...</span>
+          </div>
+          <div class="step-item" id="step3">
+            <span class="step-num">3</span>
+            <span class="step-text">Grad-CAM backprop saliency on layer features[-1]...</span>
+          </div>
+          <div class="step-item" id="step4">
+            <span class="step-num">4</span>
+            <span class="step-text">Groq LLM Clinical Ergonomics synthesis...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-Column Diagnostic Summary Grid -->
+    <section class="diagnostic-grid" id="diagnosticGrid">
+      
+      <!-- Column 1: Primary Diagnosis & Confidence -->
+      <div class="diag-card card-glass" id="cardDiagnosis">
+        <div class="card-header-bar">
+          <div class="card-header-icon bg-indigo-soft">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <span class="card-category">Computer Vision Model</span>
+            <h3 class="card-heading">Primary Diagnosis</h3>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="diagnosis-lead-box">
+            <div class="posture-class-badge" id="diagClassBadge">Prone (Stomach Sleeper)</div>
+            <div class="confidence-metric">
+              <span class="metric-val" id="diagConfidenceVal">99.9%</span>
+              <span class="metric-sub">Confidence Score</span>
+            </div>
+          </div>
+
+          <div class="class-distribution-section">
+            <h4 class="sub-section-title">Multi-Class Probability Distribution</h4>
+            <div class="probability-bars-stack">
+              <div class="prob-row">
+                <div class="prob-label-row">
+                  <span class="prob-class-name">Supine (Back)</span>
+                  <span class="prob-pct" id="probValSupine">0.0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-emerald" id="probBarSupine" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="prob-row">
+                <div class="prob-label-row">
+                  <span class="prob-class-name">Lateral Side</span>
+                  <span class="prob-pct" id="probValSide">0.0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-sky" id="probBarSide" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="prob-row">
+                <div class="prob-label-row">
+                  <span class="prob-class-name">Fetal Curled</span>
+                  <span class="prob-pct" id="probValFetal">0.0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-amber" id="probBarFetal" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="prob-row">
+                <div class="prob-label-row">
+                  <span class="prob-class-name">Prone (Stomach)</span>
+                  <span class="prob-pct" id="probValProne">0.0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-rose" id="probBarProne" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="model-meta-footnote">
+            <span>Backbone: MobileNetV2 Transfer Learning</span>
+            <span>Target: 4 Orthopedic Sleep Postures</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: Biomechanical Strain Risk Meter (0-100) -->
+      <div class="diag-card card-glass" id="cardRisk">
+        <div class="card-header-bar">
+          <div class="card-header-icon bg-amber-soft">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <div>
+            <span class="card-category">Biomechanical Strain</span>
+            <h3 class="card-heading">Risk Index (0–100)</h3>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Radial Gauge Visualization -->
+          <div class="risk-gauge-container">
+            <div class="radial-gauge-wrapper">
+              <svg class="radial-gauge-svg" viewBox="0 0 160 160">
+                <circle class="gauge-bg" cx="80" cy="80" r="68" />
+                <circle class="gauge-meter" id="gaugeProgressCircle" cx="80" cy="80" r="68" />
+              </svg>
+              <div class="gauge-center-content">
+                <span class="gauge-number" id="riskScoreNumber">86</span>
+                <span class="gauge-max">/100</span>
+                <span class="gauge-status-badge" id="riskLevelBadge">High Risk</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="risk-status-summary" id="riskStatusSummary">
+            Severe Cervical Rotation & Lumbar Hyperextension Strain
+          </p>
+
+          <!-- Anatomical Multi-Zone Breakdown -->
+          <div class="anatomical-breakdown-section">
+            <h4 class="sub-section-title">Anatomical Stress Distribution</h4>
+            
+            <div class="anatomical-bars">
+              <div class="anat-item">
+                <div class="anat-info">
+                  <span class="anat-title">Cervical Spine (C1-C7)</span>
+                  <span class="anat-val" id="anatCervicalVal">96/100</span>
+                </div>
+                <div class="anat-track">
+                  <div class="anat-fill" id="anatCervicalBar" style="width: 96%;"></div>
+                </div>
+              </div>
+
+              <div class="anat-item">
+                <div class="anat-info">
+                  <span class="anat-title">Thoracic Spine (T1-T12)</span>
+                  <span class="anat-val" id="anatThoracicVal">67/100</span>
+                </div>
+                <div class="anat-track">
+                  <div class="anat-fill" id="anatThoracicBar" style="width: 67%;"></div>
+                </div>
+              </div>
+
+              <div class="anat-item">
+                <div class="anat-info">
+                  <span class="anat-title">Lumbar Lordosis (L1-S1)</span>
+                  <span class="anat-val" id="anatLumbarVal">90/100</span>
+                </div>
+                <div class="anat-track">
+                  <div class="anat-fill" id="anatLumbarBar" style="width: 90%;"></div>
+                </div>
+              </div>
+
+              <div class="anat-item">
+                <div class="anat-info">
+                  <span class="anat-title">Pelvic & Hip Alignment</span>
+                  <span class="anat-val" id="anatPelvicVal">70/100</span>
+                </div>
+                <div class="anat-track">
+                  <div class="anat-fill" id="anatPelvicBar" style="width: 70%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: Original vs. Grad-CAM Strain Heatmap -->
+      <div class="diag-card card-glass" id="cardXai">
+        <div class="card-header-bar">
+          <div class="card-header-icon bg-emerald-soft">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <span class="card-category">Explainable AI (Grad-CAM)</span>
+            <h3 class="card-heading">Visual Strain Heatmap</h3>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- View Modes Toggle -->
+          <div class="xai-controls-bar">
+            <div class="view-mode-tabs" role="tablist">
+              <button class="view-tab active" data-view="blended">Overlay Blend</button>
+              <button class="view-tab" data-view="sidebyside">Side-by-Side</button>
+              <button class="view-tab" data-view="heatmap">Heatmap Only</button>
+            </div>
+          </div>
+
+          <!-- Visual Display Area -->
+          <div class="xai-display-container">
+            <!-- Single Canvas / Blended Mode -->
+            <div class="xai-blended-view" id="xaiBlendedView">
+              <div class="image-stage">
+                <img id="xaiBaseImage" class="layer-base" src="/static/presets/prone.jpg" alt="Original Posture">
+                <img id="xaiHeatmapLayer" class="layer-heatmap" src="" alt="Grad-CAM Saliency Overlay">
+              </div>
+            </div>
+
+            <!-- Side-by-Side Mode -->
+            <div class="xai-split-view" id="xaiSplitView" style="display: none;">
+              <div class="split-col">
+                <span class="split-label">Original Input</span>
+                <img id="xaiSplitOriginal" src="/static/presets/prone.jpg" alt="Original">
+              </div>
+              <div class="split-col">
+                <span class="split-label">Grad-CAM Saliency</span>
+                <img id="xaiSplitHeatmap" src="" alt="Grad-CAM Heatmap">
+              </div>
+            </div>
+          </div>
+
+          <!-- Heatmap Opacity Slider (For Blended mode) -->
+          <div class="opacity-slider-group" id="opacitySliderGroup">
+            <div class="slider-label-row">
+              <span class="slider-title">Heatmap Intensity:</span>
+              <span class="slider-val" id="opacitySliderVal">55%</span>
+            </div>
+            <input type="range" id="opacityRange" min="0" max="100" value="55" class="range-slider">
+          </div>
+
+          <!-- Colormap Legend -->
+          <div class="colormap-legend-box">
+            <div class="legend-bar-gradient"></div>
+            <div class="legend-labels">
+              <span>Low Activation (Neutral)</span>
+              <span>Moderate Stress</span>
+              <span>Critical Anatomical Hotspot</span>
+            </div>
+          </div>
+
+          <div class="xai-layer-tag">
+            <span>Layer: MobileNetV2.features[-1] (Conv2d: 1280ch)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Corrective Ergonomics & Clinical Action Recommendations Card -->
+    <section class="clinical-advice-card card-glass" id="cardClinicalAdvice">
+      <div class="advice-card-header">
+        <div class="advice-header-left">
+          <div class="stethoscope-icon-box">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.5 3h15v3.5a7.5 7.5 0 0 1-15 0V3z"/>
+              <path d="M12 10.5V18a3 3 0 0 0 6 0v-2"/>
+              <circle cx="18" cy="16" r="2"/>
+            </svg>
+          </div>
+          <div>
+            <div class="advice-badge-row">
+              <span class="advice-kicker">Clinical Ergonomics Dossier</span>
+              <span class="engine-badge" id="adviceEngineSourceBadge">Groq Llama-3.3-70B Synthesis</span>
+            </div>
+            <h2 class="advice-title">Personalized Spinal Alignment & Ergonomic Prescription</h2>
+          </div>
+        </div>
+
+        <div class="advice-header-actions">
+          <button id="copyAdviceBtn" class="btn-secondary btn-icon-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Copy Protocol</span>
+          </button>
+          <button id="printAdviceBtn" class="btn-secondary btn-icon-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            <span>Print Report</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Advice Content Tabs & Panels -->
+      <div class="advice-content-wrapper">
+        <div class="advice-nav-tabs" role="tablist">
+          <button class="advice-tab active" data-tab="summary">Clinical Summary & Pathomechanics</button>
+          <button class="advice-tab" data-tab="cervical">Cervical & Cranial Prescription</button>
+          <button class="advice-tab" data-tab="lumbar">Lumbar & Pelvic Decompression</button>
+          <button class="advice-tab" data-tab="equipment">Mattress & Pillow Prescriptions</button>
+          <button class="advice-tab" data-tab="rehab">Morning Stretches & Exercises</button>
+          <button class="advice-tab" data-tab="prognosis">Long-Term Prognosis</button>
+        </div>
+
+        <div class="advice-tab-panels">
+          <!-- Panel 1: Summary & Pathomechanics -->
+          <div class="tab-panel active" id="tabSummary">
+            <div class="clinical-callout-box">
+              <h4 class="callout-heading">Executive Clinical Assessment</h4>
+              <p id="adviceClinicalSummary" class="callout-text">
+                Loading clinical evaluation...
+              </p>
+            </div>
+            <div class="pathomechanics-box">
+              <h4 class="sub-heading">Biomechanical Pathomechanics & Vector Analysis</h4>
+              <p id="advicePathomechanics" class="body-text">
+                Loading vector analysis...
+              </p>
+            </div>
+          </div>
+
+          <!-- Panel 2: Cervical Spine -->
+          <div class="tab-panel" id="tabCervical">
+            <div class="section-card-inner">
+              <div class="inner-icon-row">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2">
+                  <path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/>
+                  <path d="M7 16h10"/>
+                  <path d="M8 20h8"/>
+                </svg>
+                <h4 class="sub-heading">Cervical Spine (C1-C7) Alignment Protocol</h4>
+              </div>
+              <p id="adviceCervical" class="body-text">
+                Loading cervical prescription...
+              </p>
+            </div>
+          </div>
+
+          <!-- Panel 3: Lumbar & Pelvic -->
+          <div class="tab-panel" id="tabLumbar">
+            <div class="section-card-inner">
+              <div class="inner-icon-row">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2">
+                  <path d="M12 3v18"/>
+                  <path d="M7 8h10"/>
+                  <path d="M6 13h12"/>
+                  <path d="M7 18h10"/>
+                </svg>
+                <h4 class="sub-heading">Lumbar Lordosis (L1-S1) & Pelvic Neutralization</h4>
+              </div>
+              <p id="adviceLumbar" class="body-text">
+                Loading lumbar prescription...
+              </p>
+            </div>
+          </div>
+
+          <!-- Panel 4: Equipment -->
+          <div class="tab-panel" id="tabEquipment">
+            <div class="section-card-inner">
+              <div class="inner-icon-row">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+                <h4 class="sub-heading">Sleep Ergonomics & Sleep System Specs</h4>
+              </div>
+              <p id="adviceEquipment" class="body-text">
+                Loading equipment prescription...
+              </p>
+            </div>
+          </div>
+
+          <!-- Panel 5: Exercises -->
+          <div class="tab-panel" id="tabRehab">
+            <div class="section-card-inner">
+              <div class="inner-icon-row">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                  <line x1="6" y1="1" x2="6" y2="4"/>
+                  <line x1="10" y1="1" x2="10" y2="4"/>
+                  <line x1="14" y1="1" x2="14" y2="4"/>
+                </svg>
+                <h4 class="sub-heading">Prescribed Morning Decompression & Mobility Stretches</h4>
+              </div>
+              <div class="exercises-cards-grid" id="exercisesGrid">
+                <!-- Exercises loaded via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 6: Prognosis -->
+          <div class="tab-panel" id="tabPrognosis">
+            <div class="section-card-inner">
+              <div class="inner-icon-row">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <h4 class="sub-heading">Long-Term Orthopedic Prognosis & Prevention</h4>
+              </div>
+              <p id="advicePrognosis" class="body-text">
+                Loading long-term prognosis...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Clinical Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span class="footer-title">NapoVision Medical XAI Suite</span>
+        <span class="footer-tag">Sleep easy, live easy</span>
+      </div>
+      <div class="footer-center">
+        <span>Powered by MobileNetV2 (PyTorch) • Explainable Grad-CAM • Groq Llama-3.3-70B API</span>
+      </div>
+      <div class="footer-right">
+        <span>Clinical Biomechanics & Ergonomics Framework</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Groq API Key Configuration Modal -->
+  <div class="modal-backdrop" id="apiKeyModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Configure Groq LLM API Key</h3>
+        <button id="closeApiKeyModalBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">
+          NapoVision utilizes the ultra-fast Groq API running <strong>Llama-3.3-70B-Versatile</strong> to translate deep learning Grad-CAM strain data into dynamic, empathetic clinical advice.
+        </p>
+        <div class="input-field-group">
+          <label for="groqApiKeyInput" class="input-label">Groq API Key (<code>gsk_...</code>):</label>
+          <input type="password" id="groqApiKeyInput" class="text-input" placeholder="Enter gsk_... (stored locally in browser)">
+          <span class="input-helper">Your key is saved locally in your browser's localStorage and never logged to external servers. If empty, NapoVision uses its built-in clinical ergonomic engine.</span>
+        </div>
+        <div class="modal-status-box" id="keyStatusBox">
+          <span class="status-indicator-dot"></span>
+          <span id="keyStatusText">Current status: Built-in Clinical Ergonomic Engine active</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="clearKeyBtn" class="btn-secondary">Clear Key</button>
+        <button id="saveKeyBtn" class="btn-primary">Save & Apply Key</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
