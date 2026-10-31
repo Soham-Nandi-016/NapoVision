@@ -196,6 +196,32 @@
       </div>
     </div>
 
+    <!-- Print-Only Clinical Report Header (Rendered exclusively in Print/PDF export) -->
+    <header class="print-report-header">
+      <div class="print-header-top">
+        <div class="print-brand-identity">
+          <div class="print-logo-symbol">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="34" height="34">
+              <rect width="40" height="40" rx="8" fill="#0284C7"/>
+              <path d="M20 7C16.5 7 13.5 9 12 12C14 11 16.5 11 18.5 12C21.5 13.5 24 16.5 24 20C24 23.5 21.5 26.5 18.5 28C16.5 29 14 29 12 28C13.5 31 16.5 33 20 33C27.18 33 33 27.18 33 20C33 12.82 27.18 7 20 7Z" fill="#FFFFFF"/>
+              <circle cx="12" cy="19.5" r="2.2" fill="#BAE6FD"/>
+              <circle cx="15.5" cy="15" r="2.2" fill="#E0F2FE"/>
+              <circle cx="16.5" cy="24.5" r="2.2" fill="#BAE6FD"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="print-doc-title">NapoVision™ Clinical Biomechanics & Ergonomics Report</h1>
+            <p class="print-doc-subtitle">Explainable AI (Grad-CAM) Sleep Posture Classification & Orthopedic Action Dossier</p>
+          </div>
+        </div>
+        <div class="print-doc-meta">
+          <span class="print-badge-confidential">CONFIDENTIAL MEDICAL REPORT</span>
+          <span class="print-badge-system">Suite v2.4 • Clinical Decision Support</span>
+        </div>
+      </div>
+      <div class="print-header-divider"></div>
+    </header>
+
     <!-- 3-Column Diagnostic Summary Grid -->
     <section class="diagnostic-grid" id="diagnosticGrid">
       
@@ -589,6 +615,20 @@
         </div>
       </div>
     </section>
+
+    <!-- Print-Only Clinical Report Footer (Rendered exclusively in Print/PDF export) -->
+    <footer class="print-report-footer">
+      <div class="print-footer-divider"></div>
+      <div class="print-footer-content">
+        <div class="print-footer-left">
+          <span class="print-footer-brand"><strong>NapoVision™ Medical XAI Decision Support System</strong> • Sleep easy, live easy</span>
+          <span class="print-footer-tech">MobileNetV2 Transfer Learning • features[-1] Grad-CAM Saliency • Groq LPU™ Clinical Inference</span>
+        </div>
+        <div class="print-footer-right">
+          <span>Institutional Orthopedic physical therapy protocol • For clinical decision support only</span>
+        </div>
+      </div>
+    </footer>
   </main>
 
   <!-- Clinical Footer -->

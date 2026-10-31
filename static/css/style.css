@@ -1552,43 +1552,775 @@ body {
 }
 
 /* ==========================================================================
-   Print Stylesheet (Clinical Ergonomics Medical Report)
+   Print-Only Report Elements (Hidden on Screen Viewports)
    ========================================================================== */
+.print-report-header,
+.print-report-footer {
+  display: none;
+}
+
+/* ==========================================================================
+   Print & PDF Export Stylesheet (Institutional Clinical Ergonomics Dossier)
+   ========================================================================== */
+@page {
+  size: A4 portrait;
+  margin: 10mm 12mm 12mm 12mm;
+}
+
 @media print {
-  body {
+  /* --- 1. Global Page Resets & Typography --- */
+  html, body {
     background: #FFFFFF !important;
-    color: #000000 !important;
+    color: #0F172A !important;
+    font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 11pt !important;
+    line-height: 1.45 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* --- 2. Hide Web UI Chrome & Non-Report Interactive Controls --- */
   .app-header,
+  .section-hero,
   .upload-workflow-card,
+  .diagnostics-loader,
   .advice-header-actions,
   .btn-api-config,
-  .view-mode-tabs,
+  .advice-nav-tabs,
+  .xai-controls-bar,
   .opacity-slider-group,
   .modal-backdrop,
   .app-footer {
     display: none !important;
   }
 
+  /* --- 3. Layout Normalization --- */
   .main-layout {
     padding: 0 !important;
+    margin: 0 !important;
     max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
+    gap: 0 !important;
   }
 
   .card-glass {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
     box-shadow: none !important;
-    border: 1px solid #CCCCCC !important;
-    break-inside: avoid;
-    margin-bottom: 1.5rem;
+  }
+
+  /* --- 4. Page Break Rules --- */
+  .diagnostic-grid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .diag-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .clinical-advice-card {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .advice-card-header {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
   }
 
   .tab-panel {
-    display: block !important;
-    margin-bottom: 1rem;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
-  .advice-nav-tabs {
-    display: none !important;
+  .clinical-callout-box,
+  .pathomechanics-box,
+  .section-card-inner {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .exercises-cards-grid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .exercise-item-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  h1, h2, h3, h4,
+  .card-heading,
+  .advice-title,
+  .callout-heading,
+  .sub-heading {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  p, .body-text, .callout-text, .ex-desc {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* --- 5. Print-Only Report Header --- */
+  .print-report-header {
+    display: block !important;
+    margin-bottom: 12px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-header-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 8px !important;
+  }
+
+  .print-brand-identity {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  .print-logo-symbol svg {
+    display: block !important;
+  }
+
+  .print-doc-title {
+    font-family: var(--font-heading) !important;
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    color: #0284C7 !important;
+    letter-spacing: -0.02em !important;
+    margin: 0 0 2px 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-doc-subtitle {
+    font-size: 0.78rem !important;
+    color: #64748B !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+  }
+
+  .print-doc-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 3px !important;
+  }
+
+  .print-badge-confidential {
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    background: #FEE2E2 !important;
+    color: #B91C1C !important;
+    border: 1px solid #FCA5A5 !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+  }
+
+  .print-badge-system {
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    color: #64748B !important;
+    font-family: var(--font-mono) !important;
+  }
+
+  .print-header-divider {
+    height: 2px !important;
+    background: linear-gradient(90deg, #0284C7 0%, #38BDF8 50%, #E2E8F0 100%) !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+
+  /* --- 6. 3-Column Diagnostic Summary Grid --- */
+  .diagnostic-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1.15fr !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .diag-card {
+    padding: 10px 12px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 8px !important;
+  }
+
+  .card-header-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid #F1F5F9 !important;
+  }
+
+  .card-header-icon {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 5px !important;
+  }
+
+  .card-header-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .card-category {
+    font-size: 0.64rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    color: #64748B !important;
+    font-weight: 700 !important;
+  }
+
+  .card-heading {
+    font-size: 0.90rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    line-height: 1.15 !important;
+  }
+
+  .card-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Column 1: Primary Diagnosis */
+  .diagnosis-lead-box {
+    background: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 4px !important;
+  }
+
+  .posture-class-badge {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+  }
+
+  .confidence-metric {
+    text-align: right !important;
+  }
+
+  .confidence-metric .metric-val {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    color: #0284C7 !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+
+  .confidence-metric .metric-sub {
+    font-size: 0.62rem !important;
+    color: #64748B !important;
+  }
+
+  .class-distribution-section .sub-section-title,
+  .anatomical-breakdown-section .sub-section-title {
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #475569 !important;
+    margin-bottom: 5px !important;
+    font-weight: 700 !important;
+  }
+
+  .probability-bars-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+  }
+
+  .prob-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .prob-label-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 0.70rem !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+  }
+
+  .progress-track {
+    height: 5px !important;
+    background: #F1F5F9 !important;
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+  }
+
+  .progress-fill {
+    height: 100% !important;
+    border-radius: 9999px !important;
+  }
+
+  .fill-emerald { background: #10B981 !important; }
+  .fill-sky { background: #0284C7 !important; }
+  .fill-amber { background: #F59E0B !important; }
+  .fill-rose { background: #EF4444 !important; }
+
+  .model-meta-footnote {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 0.64rem !important;
+    color: #64748B !important;
+    font-family: var(--font-mono) !important;
+    border-top: 1px solid #F1F5F9 !important;
+    padding-top: 5px !important;
+    margin-top: 2px !important;
+  }
+
+  /* Column 2: Biomechanical Risk Meter */
+  .risk-gauge-container {
+    display: flex !important;
+    justify-content: center !important;
+    margin: 0 auto 4px auto !important;
+  }
+
+  .radial-gauge-wrapper {
+    width: 90px !important;
+    height: 90px !important;
+    position: relative !important;
+  }
+
+  .radial-gauge-svg {
+    width: 90px !important;
+    height: 90px !important;
+    transform: rotate(-90deg) !important;
+  }
+
+  .gauge-bg {
+    stroke: #E2E8F0 !important;
+    stroke-width: 10 !important;
+    fill: none !important;
+  }
+
+  .gauge-meter {
+    stroke-width: 10 !important;
+    stroke-linecap: round !important;
+    fill: none !important;
+  }
+
+  .gauge-center-content {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .gauge-number {
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    color: #0F172A !important;
+  }
+
+  .gauge-max {
+    font-size: 0.62rem !important;
+    color: #94A3B8 !important;
+    line-height: 1 !important;
+  }
+
+  .gauge-status-badge {
+    font-size: 0.60rem !important;
+    font-weight: 700 !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    text-transform: uppercase !important;
+    margin-top: 2px !important;
+  }
+
+  .high-tag { background: #FEE2E2 !important; color: #DC2626 !important; }
+  .mod-tag { background: #FEF3C7 !important; color: #D97706 !important; }
+  .mild-tag { background: #E0F2FE !important; color: #0284C7 !important; }
+  .low-tag { background: #D1FAE5 !important; color: #059669 !important; }
+
+  .risk-status-summary {
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    color: #0F172A !important;
+    text-align: center !important;
+    line-height: 1.25 !important;
+    margin: 2px 0 6px 0 !important;
+  }
+
+  .anatomical-bars {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .anat-item {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .anat-info {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 0.68rem !important;
+    color: #334155 !important;
+  }
+
+  .anat-track {
+    height: 5px !important;
+    background: #F1F5F9 !important;
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+  }
+
+  .anat-fill {
+    height: 100% !important;
+    background: linear-gradient(90deg, #0284C7, #EF4444) !important;
+    border-radius: 9999px !important;
+  }
+
+  /* Column 3: Grad-CAM Explainable AI */
+  .xai-display-container {
+    aspect-ratio: auto !important;
+    height: 145px !important;
+    width: 100% !important;
+    background: #F8FAFC !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    position: relative !important;
+    margin-bottom: 4px !important;
+  }
+
+  .xai-blended-view {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+  }
+
+  .image-stage {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+  }
+
+  .layer-base,
+  .layer-heatmap {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    background: #0F172A !important;
+  }
+
+  .layer-heatmap {
+    opacity: 0.65 !important;
+  }
+
+  .colormap-legend-box {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    margin-top: 3px !important;
+  }
+
+  .legend-bar-gradient {
+    height: 5px !important;
+    border-radius: 9999px !important;
+    background: linear-gradient(90deg, #0000FF 0%, #00FFFF 25%, #00FF00 50%, #FFFF00 75%, #FF0000 100%) !important;
+  }
+
+  .legend-labels {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 0.60rem !important;
+    color: #64748B !important;
+    font-weight: 500 !important;
+  }
+
+  .xai-layer-tag {
+    font-size: 0.62rem !important;
+    color: #64748B !important;
+    font-family: var(--font-mono) !important;
+    text-align: center !important;
+    margin-top: 2px !important;
+  }
+
+  /* --- 7. Clinical Ergonomics Recommendations Card --- */
+  .clinical-advice-card {
+    padding: 12px 14px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .advice-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 2px solid #0284C7 !important;
+  }
+
+  .advice-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .stethoscope-icon-box {
+    width: 32px !important;
+    height: 32px !important;
+    background: #E0F2FE !important;
+    border-radius: 6px !important;
+  }
+
+  .stethoscope-icon-box svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .advice-badge-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .advice-kicker {
+    font-size: 0.66rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #0284C7 !important;
+  }
+
+  .engine-badge {
+    font-size: 0.64rem !important;
+    font-weight: 600 !important;
+    background: #F1F5F9 !important;
+    border: 1px solid #CBD5E1 !important;
+    color: #334155 !important;
+    padding: 1px 6px !important;
+    border-radius: 9999px !important;
+    font-family: var(--font-mono) !important;
+  }
+
+  .advice-title {
+    font-family: var(--font-heading) !important;
+    font-size: 1.10rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    letter-spacing: -0.01em !important;
+    margin: 0 !important;
+  }
+
+  .advice-content-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .advice-tab-panels {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Sequential Panel Stacking without Blank Spaces */
+  .tab-panel {
+    display: block !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+    animation: none !important;
+  }
+
+  .clinical-callout-box {
+    background: #F0F9FF !important;
+    border: 1px solid #BAE6FD !important;
+    border-left: 4px solid #0284C7 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .callout-heading {
+    font-size: 0.90rem !important;
+    font-weight: 700 !important;
+    color: #0369A1 !important;
+    margin: 0 0 3px 0 !important;
+  }
+
+  .callout-text {
+    font-size: 0.84rem !important;
+    color: #0C4A6E !important;
+    line-height: 1.45 !important;
+    margin: 0 !important;
+  }
+
+  .pathomechanics-box {
+    background: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .section-card-inner {
+    background: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin: 0 !important;
+  }
+
+  .inner-icon-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 3px !important;
+    border-bottom: 1px solid #E2E8F0 !important;
+  }
+
+  .inner-icon-row svg {
+    width: 16px !important;
+    height: 16px !important;
+    stroke: #0284C7 !important;
+  }
+
+  .sub-heading {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    margin: 0 !important;
+  }
+
+  .body-text {
+    font-size: 0.83rem !important;
+    color: #334155 !important;
+    line-height: 1.45 !important;
+    margin: 0 !important;
+  }
+
+  /* Corrective Exercises Grid */
+  .exercises-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+  }
+
+  .exercise-item-card {
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+  }
+
+  .ex-badge {
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+    color: #0369A1 !important;
+    background: #E0F2FE !important;
+    padding: 1px 5px !important;
+    border-radius: 3px !important;
+    width: fit-content !important;
+  }
+
+  .ex-title {
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+  }
+
+  .ex-dosage {
+    font-size: 0.70rem !important;
+    font-weight: 600 !important;
+    color: #0369A1 !important;
+    font-family: var(--font-mono) !important;
+  }
+
+  .ex-desc {
+    font-size: 0.76rem !important;
+    color: #334155 !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+  }
+
+  /* --- 8. Print-Only Report Footer --- */
+  .print-report-footer {
+    display: block !important;
+    margin-top: 10px !important;
+    padding-top: 6px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-footer-divider {
+    height: 1px !important;
+    background: #CBD5E1 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .print-footer-content {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 0.64rem !important;
+    color: #64748B !important;
+  }
+
+  .print-footer-left {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .print-footer-right {
+    text-align: right !important;
+    font-style: italic !important;
   }
 }
