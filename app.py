@@ -234,5 +234,5 @@ def predict():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    logger.info(f"Starting NapoVision server at http://127.0.0.1:{port}")
-    app.run(host="127.0.0.1", port=port, debug=False)
+    logger.info(f"Starting NapoVision server on host 0.0.0.0, port {port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
